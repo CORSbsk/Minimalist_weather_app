@@ -1,12 +1,17 @@
+import 'dart:async';
+
+import 'weather_cubit.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../domain/weather_condition.dart';
-import 'weather_cubit.dart';
+import 'package:intl/intl.dart';
+
 import '../data/weather_api_service.dart';
 import '../data/weather_repository.dart';
 import '../domain/get_weather_usecase.dart';
-import 'package:intl/intl.dart';
+import '../domain/weather_condition.dart';
+
 
 class WeatherPage extends StatelessWidget {
   const WeatherPage({super.key});
@@ -34,10 +39,24 @@ class WeatherView extends StatefulWidget {
 
 class _WeatherViewState extends State<WeatherView> {
   final ValueNotifier<bool> _isDark = ValueNotifier(true);
+  late Timer _timer;
+  DateTime _now = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() {
+        _now = DateTime.now();
+      });
+    });
+  }
+
 
   @override
   void dispose() {
     _isDark.dispose();
+    _timer.cancel();
     super.dispose();
   }
 
@@ -46,11 +65,10 @@ class _WeatherViewState extends State<WeatherView> {
     return ValueListenableBuilder<bool>(
       valueListenable: _isDark,
       builder: (context, isDark, _) {
-        final now = DateTime.now();
-        final dayOfWeek = DateFormat('EEEE').format(now); // Tuesday
-        final hour = DateFormat('HH:mm').format(now); // 10:30
-        final ampm = DateFormat('a').format(now).toLowerCase(); // am/pm
-        final dayOfMonth = DateFormat('d').format(now); // 21
+        final dayOfWeek = DateFormat('EEEE').format(_now); // Tuesday
+        final hour = DateFormat('hh:mm').format(_now); // 10:30
+        final ampm = DateFormat('a').format(_now).toLowerCase(); // am/pm
+        final dayOfMonth = DateFormat('d').format(_now); // 21
         return Scaffold(
           floatingActionButton: FloatingActionButton(
             onPressed: () => _isDark.value = !_isDark.value,
@@ -85,6 +103,7 @@ class _WeatherViewState extends State<WeatherView> {
                 if (state.weather != null) {
                   final weather = state.weather!;
                   final style = _getWeatherStyle(
+                    // Sunny, Cloudy, Rainy, Snow, Storm
                     weatherConditionToString(weather.condition),
                     weather.temperature.toInt(),
                     isDark,
@@ -208,11 +227,16 @@ class _WeatherViewState extends State<WeatherView> {
                                     ),
                                   ),
                                   const SizedBox(height: 2),
-                                  Text(
-                                    weather.city ?? '',
-                                    style: TextStyle(
-                                      color: style.textColor.withOpacity(0.7),
-                                      fontSize: 20,
+                                  SizedBox(
+                                    width: 190, // o MediaQuery.of(context).size.width * 0.5
+                                    child: Text(
+                                      weather.city ?? '',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: style.textColor.withOpacity(0.7),
+                                        fontSize: 20,
+                                      ),
                                     ),
                                   ),
                                 ],

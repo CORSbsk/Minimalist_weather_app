@@ -46,23 +46,25 @@ class WeatherCubit extends Cubit<WeatherState> {
     bool serviceEnabled;
     LocationPermission permission;
 
+    // Verifica si el GPS está activado
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      throw Exception('La localización está desactivada.');
+      return Future.error('El servicio de ubicación está deshabilitado.');
     }
 
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        throw Exception('Permiso de localización denegado.');
+        return Future.error('El permiso de ubicación fue denegado.');
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      throw Exception('Permiso de localización denegado permanentemente.');
+      return Future.error('El permiso de ubicación está permanentemente denegado.');
     }
 
     return await Geolocator.getCurrentPosition();
   }
+
 } 
